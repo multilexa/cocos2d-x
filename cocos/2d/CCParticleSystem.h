@@ -252,6 +252,8 @@ public:
     static ParticleSystem* createWithTotalParticles(int numberOfParticles);
     
     void addParticles(int count);
+
+    virtual bool __cleanup();
     
     void stopSystem();
     /** Kill all living particles.

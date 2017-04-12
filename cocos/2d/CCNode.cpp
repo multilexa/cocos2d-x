@@ -970,6 +970,8 @@ void Node::addChildHelper(Node* child, int localZOrder, int tag, const std::stri
     
     child->setParent(this);
 
+    if (_cameraMask != 1) child->setCameraMask(_cameraMask); // ap: ADDED
+
     child->updateOrderOfArrival();
 
     if( _running )

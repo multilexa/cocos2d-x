@@ -831,6 +831,39 @@ bool ParticleSystem::isFull()
     return (_particleCount == _totalParticles);
 }
 
+bool ParticleSystem::__cleanup() {
+    for (int i = 0; i < _particleCount; ++i)
+    {
+        if (_particleData.timeToLive[i] <= 0.0f)
+        {
+            int j = _particleCount - 1;
+            while (j > 0 && _particleData.timeToLive[j] <= 0)
+            {
+                _particleCount--;
+                j--;
+            }
+            _particleData.copyParticle(i, _particleCount - 1);
+            if (_batchNode)
+            {
+                //disable the switched particle
+                int currentIndex = _particleData.atlasIndex[i];
+                _batchNode->disableParticle(_atlasIndex + currentIndex);
+                //switch indexes
+                _particleData.atlasIndex[_particleCount - 1] = currentIndex;
+            }
+            --_particleCount;
+            if (_particleCount == 0 && _isAutoRemoveOnFinish)
+            {
+                this->unscheduleUpdate();
+                _parent->removeChild(this, true);
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 // ParticleSystem - MainLoop
 void ParticleSystem::update(float dt)
 {
@@ -866,34 +899,7 @@ void ParticleSystem::update(float dt)
             _particleData.timeToLive[i] -= dt;
         }
         
-        for (int i = 0; i < _particleCount; ++i)
-        {
-            if (_particleData.timeToLive[i] <= 0.0f)
-            {
-                int j = _particleCount - 1;
-                while (j > 0 && _particleData.timeToLive[j] <= 0)
-                {
-                    _particleCount--;
-                    j--;
-                }
-                _particleData.copyParticle(i, _particleCount - 1);
-                if (_batchNode)
-                {
-                    //disable the switched particle
-                    int currentIndex = _particleData.atlasIndex[i];
-                    _batchNode->disableParticle(_atlasIndex + currentIndex);
-                    //switch indexes
-                    _particleData.atlasIndex[_particleCount - 1] = currentIndex;
-                }
-                --_particleCount;
-                if( _particleCount == 0 && _isAutoRemoveOnFinish )
-                {
-                    this->unscheduleUpdate();
-                    _parent->removeChild(this, true);
-                    return;
-                }
-            }
-        }
+        if (!__cleanup()) return;
         
         if (_emitterMode == Mode::GRAVITY)
         {
